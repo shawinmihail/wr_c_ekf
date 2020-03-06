@@ -2,12 +2,6 @@
 #include <stdio.h>
 #include "Definitions.h"
 
-// csv
-
-std::string csvStrVect15(const Vector15& vect);
-
-std::string csvStrVect9(const Vector9& vect);
-
 // quat
 
 Vector4 quatFromEul(const Vector3& eul);
@@ -33,6 +27,8 @@ Eigen::Matrix<float, 3, 4> quatRotateLinearizationQ(const Vector4& q, const Vect
 Eigen::Matrix<float, 4, 4> poissonEqLinearizationQ(const Vector3& w);
 
 Eigen::Matrix<float, 4, 3> poissonEqLinearizationW(const Vector4& q, const Vector3& w);
+
+Eigen::Matrix<float, 1, 3> normVect3Linearization(const Vector3& v);
 
 
 

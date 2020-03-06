@@ -1,91 +1,70 @@
-clc
-clear
+% clc
+% clear
 close all
-
-%% act
-path = 'act_state_log.csv';
-data = csvread(path);
-
-x_act = data(:,1);
-y_act = data(:,2);
-z_act = data(:,3);
-
-vx_act = data(:,4);
-vy_act = data(:,5);
-vz_act = data(:,6);
-
-ax_act = data(:,7);
-ay_act = data(:,8);
-az_act = data(:,9);
-
-qx_act = data(:,10);
-qy_act = data(:,11);
-qz_act = data(:,12);
-
-wx_act = data(:,13);
-wy_act = data(:,14);
-wz_act = data(:,15);
-
-%% mes
-path = 'mes_state_log.csv';
-data = csvread(path);
-
-x_mes = data(:,1);
-y_mes = data(:,2);
-z_mes = data(:,3);
-
-vx_mes = data(:,4);
-vy_mes = data(:,5);
-vz_mes = data(:,6);
-
-ax_mes = data(:,7);
-ay_mes = data(:,8);
-az_mes = data(:,9);
-
-qx_mes = data(:,10);
-qy_mes = data(:,11);
-qz_mes = data(:,12);
-
-wx_mes = data(:,13);
-wy_mes = data(:,14);
-wz_mes = data(:,15);
 
 %% est
 path = 'est_state_log.csv';
 data = csvread(path);
 
-x_est = data(:,1);
-y_est = data(:,2);
-z_est = data(:,3);
+c_x_est = data(:,1);
+c_y_est = data(:,2);
+c_z_est = data(:,3);
 
-vx_est = data(:,4);
-vy_est = data(:,5);
-vz_est = data(:,6);
+c_vx_est = data(:,4);
+c_vy_est = data(:,5);
+c_vz_est = data(:,6);
 
-ax_est = 0;
-ay_est = 0;
-az_est = 0;
+c_ax_est = data(:,7);
+c_ay_est = data(:,8);
+c_az_est = data(:,9);
 
-qx_est = data(:,7);
-qy_est = data(:,8);
-qz_est = data(:,9);
+c_qw_est = data(:,10);
+c_qx_est = data(:,11);
+c_qy_est = data(:,12);
+c_qz_est = data(:,13);
 
-wx_est = 0;
-wy_est = 0;
-wz_est = 0;
+c_wx_est = data(:,14);
+c_wy_est = data(:,15);
+c_wz_est = data(:,16);
+
+% figure
+% hold on
+% plot(c_x_est, 'r')
+% plot(c_y_est, 'g')
+% plot(c_z_est, 'b')
+
+run('parse_sim_data');
 
 
 figure
 hold on
-plot(qx_est, 'r')
-plot(qy_est, 'g')
+plot(x_est, 'r--')
+plot(y_est, 'g--')
+plot(z_est, 'b--')
+
+plot(c_x_est, 'r')
+plot(c_y_est, 'g')
+plot(c_z_est, 'b')
 
 figure
 hold on
-plot(x_mes, y_mes,  'y')
-plot(x_est, y_est, 'b')
-% plot(x_act, y_act, 'r')
+plot(vx_est, 'r--')
+plot(vy_est, 'g--')
+plot(vz_est, 'b--')
+
+plot(c_vx_est, 'r')
+plot(c_vy_est, 'g')
+plot(c_vz_est, 'b')
+
+figure
+hold on
+plot(qx_est, 'r--')
+plot(qy_est, 'g--')
+plot(qz_est, 'b--')
+
+plot(c_qx_est, 'r')
+plot(c_qy_est, 'g')
+plot(c_qz_est, 'b')
 
 
-% plot(vx_act, 'k')
 

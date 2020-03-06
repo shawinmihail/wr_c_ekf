@@ -12,6 +12,7 @@ class SREKF
 public:
 	SREKF();
 	void predictImu(const Vector3& aMes, const Vector3& wMes, float dt);
+	void SREKF::correctZ(const Vector3& p, const Vector3& v, const Vector3& a);
 	void correctPv(const Vector6& pv);
 	void correctV(const Vector3& v);
 	void correctA(const Vector3& a);
@@ -25,6 +26,7 @@ private:
 	Eigen::Matrix<float, 6, 6> _sqrtR_pv;
 	Eigen::Matrix<float, 3, 3> _sqrtR_v;
 	Eigen::Matrix<float, 3, 3> _sqrtR_a;
+	Eigen::Matrix<float, 12, 12> _sqrtR_z;
 
 	Vector3 _gpsAttachmentShift;
 
