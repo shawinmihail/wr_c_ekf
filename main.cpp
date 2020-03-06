@@ -60,8 +60,10 @@ void main()
         std::cout << i << "\n\n";
 
         srEkf.predictImu(mesState.segment(6, 3), mesState.segment(13, 3), 1e-3f);
-        //srEkf.correctPv(mesState.segment(0, 6));
-        srEkf.correctZ(mesState.segment(0, 3), mesState.segment(3, 3), mesState.segment(6, 3));
+        srEkf.correctPv(mesState.segment(0, 6));
+        srEkf.correctV(mesState.segment(3, 3));
+        srEkf.correctA(mesState.segment(6, 3));
+        //srEkf.correctZ(mesState.segment(0, 3), mesState.segment(3, 3), mesState.segment(6, 3));
         //std::cout << srEkf.getEstState().transpose() << "\n\n";
 
         est_state_log << csvStrVect<16>(srEkf.getEstState());
