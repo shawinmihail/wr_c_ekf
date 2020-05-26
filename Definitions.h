@@ -9,3 +9,4 @@ typedef Eigen::Matrix<float, 9, 1> Vector9;
 typedef Eigen::Matrix<float, 10, 1> Vector10;
 typedef Eigen::Matrix<float, 15, 1> Vector15;
 typedef Eigen::Matrix<float, 16, 1> Vector16;
+typedef Eigen::Matrix<float, 22, 1> Vector22;

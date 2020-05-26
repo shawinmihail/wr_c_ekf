@@ -2,7 +2,7 @@
 % clear
 close all
 
-%% est
+%% C
 path = 'est_state_log.csv';
 data = csvread(path);
 
@@ -27,44 +27,42 @@ c_wx_est = data(:,14);
 c_wy_est = data(:,15);
 c_wz_est = data(:,16);
 
-% figure
-% hold on
-% plot(c_x_est, 'r')
-% plot(c_y_est, 'g')
-% plot(c_z_est, 'b')
-
+%% M
 run('parse_sim_data');
 
-
+%% PLOT
 figure
 hold on
-plot(x_est, 'r--')
-plot(y_est, 'g--')
-plot(z_est, 'b--')
+plot(c_qx_est, 'r--')
+plot(c_qy_est, 'g--')
+plot(c_qz_est, 'b--')
 
-plot(c_x_est, 'r')
-plot(c_y_est, 'g')
-plot(c_z_est, 'b')
+plot(qx_est, 'r')
+plot(qy_est, 'g')
+plot(qz_est, 'b')
 
-figure
-hold on
-plot(vx_est, 'r--')
-plot(vy_est, 'g--')
-plot(vz_est, 'b--')
-
-plot(c_vx_est, 'r')
-plot(c_vy_est, 'g')
-plot(c_vz_est, 'b')
-
-figure
-hold on
-plot(qx_est, 'r--')
-plot(qy_est, 'g--')
-plot(qz_est, 'b--')
-
-plot(c_qx_est, 'r')
-plot(c_qy_est, 'g')
-plot(c_qz_est, 'b')
-
+plot(qx_act, 'k')
+plot(qy_act, 'k')
+plot(qz_act, 'k')
+% 
+% figure
+% hold on
+% plot(vx_est, 'r--')
+% plot(vy_est, 'g--')
+% plot(vz_est, 'b--')
+% 
+% plot(c_vx_est, 'r')
+% plot(c_vy_est, 'g')
+% plot(c_vz_est, 'b')
+% 
+% figure
+% hold on
+% plot(qx_est, 'r--')
+% plot(qy_est, 'g--')
+% plot(qz_est, 'b--')
+% 
+% plot(c_qx_est, 'r')
+% plot(c_qy_est, 'g')
+% plot(c_qz_est, 'b')
 
 

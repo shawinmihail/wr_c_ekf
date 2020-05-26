@@ -31,10 +31,8 @@ MatlabDataParser::MatlabDataParser(const std::string& path) :
 
 }
 
-bool MatlabDataParser::next(Vector16& state, float& dt)
+bool MatlabDataParser::next(Vector22& state, float& dt)
 {
-    //Eigen::Map<Vector16> mp(_data + 17);
-    //mp.
 
     if (_currentLineNum == _length - 1)
     {

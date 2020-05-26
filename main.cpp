@@ -37,9 +37,9 @@ void main()
     SREKF srEkf;
 
     // read mes
-    std::string mesDataPath("resources/mes_states.floats");
+    std::string mesDataPath("resources/mes_states2.floats");
     MatlabDataParser mesDater(mesDataPath);
-    Vector16 mesState;
+    Vector22 mesState;
     float mesTime = 0;
 
     // test
@@ -60,9 +60,11 @@ void main()
         std::cout << i << "\n\n";
 
         srEkf.predictImu(mesState.segment(6, 3), mesState.segment(13, 3), 1e-3f);
-        srEkf.correctPv(mesState.segment(0, 6));
-        srEkf.correctV(mesState.segment(3, 3));
-        srEkf.correctA(mesState.segment(6, 3));
+        //srEkf.correctPv(mesState.segment(0, 6));
+        //srEkf.correctV(mesState.segment(3, 3));
+        //srEkf.correctA(mesState.segment(6, 3));
+        srEkf.correctP3(mesState.segment(16, 3), mesState.segment(19, 3));
+        //std::cout << mesState.segment(16, 3) << "\n\n";
         //srEkf.correctZ(mesState.segment(0, 3), mesState.segment(3, 3), mesState.segment(6, 3));
         //std::cout << srEkf.getEstState().transpose() << "\n\n";
 

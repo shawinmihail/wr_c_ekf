@@ -40,7 +40,7 @@ SREKF::SREKF() :
 
 	// init Q
 	EkfStateVector qDiag;
-	qDiag << /*r*/ 1e-3f, 1e-3f, 1e-3f, /*v*/ 1e-3f, 1e-3f, 1e-3f, /*a*/ 1e-3f, 1e-3f, 1e-3f, /*q*/ 1e-5f, 1e-5f, 1e-5f, 1e-5f, /*w*/ 1e-5f, 1e-5f, 1e-5f;
+	qDiag << /*r*/ 1e-2f, 1e-2f, 1e-2f, /*v*/ 1e-2f, 1e-2f, 1e-2f, /*a*/ 1e-2f, 1e-2f, 1e-2f, /*q*/ 1e-4f, 1e-4f, 1e-4f, 1e-4f, /*w*/ 1e-2f, 1e-2f, 1e-2f;
 	_Q = qDiag.asDiagonal();
 
 	// init P
@@ -50,21 +50,27 @@ SREKF::SREKF() :
 
 	// init R_pv
 	Vector6 rDiag_pv;
-	rDiag_pv << /*r*/ 1e-1f, 1e-1f, 1e-1f, /*v*/ 1e-2f, 1e-2f, 1e-2f;
+	rDiag_pv << /*r*/ 0.144f, 0.144f, 0.144f, /*v*/ 0.0025f, 0.0025f, 0.0025f;
 	Eigen::Matrix<float, 6, 6> R_pv = rDiag_pv.asDiagonal();
 	_sqrtR_pv = cholUpdate<6>(R_pv);
 
 	// init R_v
 	Vector3 rDiag_v;
-	rDiag_v <<  /*v*/ 3e-3f, 3e-3f, 3e-3f;
+	rDiag_v <<  /*v*/ 0.0025f, 0.0025f, 0.0025f;
 	Eigen::Matrix<float, 3, 3> R_v = rDiag_v.asDiagonal();
 	_sqrtR_v = cholUpdate<3>(R_v);
 
 	// init R_a
 	Vector3 rDiag_a;
-	rDiag_a << /*a*/ 1e-2f, 1e-2f, 1e-2f;
+	rDiag_a << /*a*/ 0.0025f, 0.0025f, 0.0025f;
 	Eigen::Matrix<float, 3, 3> R_a = rDiag_a.asDiagonal();
 	_sqrtR_a = cholUpdate<3>(R_a);
+
+	// init R_p3
+	Vector6 rDiag_p3;
+	rDiag_p3 <<  0.144f, 0.144f, 0.144f, 0.144f, 0.144f, 0.144f;
+	Eigen::Matrix<float, 6, 6> R_p3 = rDiag_p3.asDiagonal();
+	_sqrtR_p3 = cholUpdate<6>(R_p3);
 
 	// init R_z
 	Eigen::Matrix<float, 12, 1> rDiag_z;
@@ -74,6 +80,8 @@ SREKF::SREKF() :
 
 	//gpsAttachmentShift
 	_gpsAttachmentShift << 0.3f, -0.3f, 0.9f;
+	_gpsSlave1 << 0.3f, 0.2f, 0.1f;
+	_gpsSlave2 << 0.3f, -0.2f, 0.1f;
 }
 
 void SREKF::predictImu(const Vector3& aMes, const Vector3& wMes, float dt)
@@ -159,6 +167,53 @@ void SREKF::correctPv(const Vector6& pv)
 	Eigen::Matrix<float, 6, SREKF_STATE_DIM + 6> triaArg1;
 	Eigen::Matrix<float, SREKF_STATE_DIM, SREKF_STATE_DIM + 6> triaArg2;
 	triaArg1 << _sqrtR_pv, H * _sqrtP;
+
+	triaArg2 << Eigen::Matrix<float, SREKF_STATE_DIM, 6>::Zero(), _sqrtP;
+	triaArg << triaArg1, triaArg2;
+
+	Eigen::Matrix<float, SREKF_STATE_DIM + 6, SREKF_STATE_DIM + 6> M = getLowTriang<SREKF_STATE_DIM + 6, SREKF_STATE_DIM + 6>(triaArg);
+	Eigen::Matrix<float, 6, 6> sqrtRk = M.block<6, 6>(0, 0);
+	Eigen::Matrix<float, SREKF_STATE_DIM, 6> K = M.block<SREKF_STATE_DIM, 6>(6, 0);
+	_sqrtP = M.block<SREKF_STATE_DIM, SREKF_STATE_DIM>(6, 6);
+
+	_X = _X + K * (sqrtRk.transpose().inverse())*dz;
+	_X.segment(9, 4).normalize();
+}
+
+void SREKF::correctP3(const Vector3& dr1, const Vector3& dr2)
+{
+	Vector3 r = _X.segment(0, 3);
+	Vector3 v = _X.segment(3, 3);
+	Vector3 a = _X.segment(6, 3);
+	Vector4 q = _X.segment(9, 4);
+	Vector3 w = _X.segment(13, 3);
+
+	// mes model
+	Vector3 Z1 = quatRotate(q, _gpsSlave1);
+	Vector3 Z2 = quatRotate(q, _gpsSlave2);
+	Vector6 Zx;
+	Zx << Z1, Z2;
+
+	Vector6 Z;
+	Z << dr1, dr2;
+	Vector6 dz = Z - Zx;
+
+	// H
+	Eigen::Matrix<float, 3, 4> Zdr1 = quatRotateLinearizationQ(q, _gpsSlave1);
+	Eigen::Matrix<float, 3, 4> Zdr2 = quatRotateLinearizationQ(q, _gpsSlave2);
+
+	Eigen::Matrix<float, 3, SREKF_STATE_DIM> H1;
+	Eigen::Matrix<float, 3, SREKF_STATE_DIM> H2;
+	Eigen::Matrix<float, 6, SREKF_STATE_DIM> H;
+	H1 << O33, O33, O33, Zdr1, O33;
+	H2 << O33, O33, O33, Zdr2, O33;
+	H << H1, H2;
+
+	// square-root
+	Eigen::Matrix<float, SREKF_STATE_DIM + 6, SREKF_STATE_DIM + 6> triaArg;
+	Eigen::Matrix<float, 6, SREKF_STATE_DIM + 6> triaArg1;
+	Eigen::Matrix<float, SREKF_STATE_DIM, SREKF_STATE_DIM + 6> triaArg2;
+	triaArg1 << _sqrtR_p3, H * _sqrtP;
 
 	triaArg2 << Eigen::Matrix<float, SREKF_STATE_DIM, 6>::Zero(), _sqrtP;
 	triaArg << triaArg1, triaArg2;
