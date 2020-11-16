@@ -2,10 +2,12 @@
 #include <string>
 #include "Definitions.h"
 
-class MatlabDataParser {
+typedef Eigen::Matrix<float, 18, 1> MatlabDataParserVector;
+class MatlabDataParser
+{
 public:
 	MatlabDataParser(const std::string& path);
-	bool next(Vector22& state, float& dt);
+	bool next(MatlabDataParserVector& state, float& dt);
 private:
 	int _length;
 	int _width;

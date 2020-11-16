@@ -31,7 +31,7 @@ MatlabDataParser::MatlabDataParser(const std::string& path) :
 
 }
 
-bool MatlabDataParser::next(Vector22& state, float& dt)
+bool MatlabDataParser::next(MatlabDataParserVector& state, float& dt)
 {
 
     if (_currentLineNum == _length - 1)
