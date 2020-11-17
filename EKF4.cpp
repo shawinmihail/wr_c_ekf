@@ -71,7 +71,6 @@ void EKF4::predict(float dt)
 	Vector4 qw(0.0f, _w_smoothed[0], _w_smoothed[1], _w_smoothed[2]);
 	Vector3 r1 = r0 + v0 * dt;
 	Vector3 dq = quatRotate(q0, _w_smoothed).cross(v0) * dt;
-	std::cout << dq << std::endl;
 	Vector3 v1 = v0 + quatRotate(q0, _w_smoothed).cross(v0) * dt;
 	Vector4 q1 = q0 + 0.5 * quatMultiply(q0, qw) * dt;
 	q1 = q1 / q1.norm();
@@ -99,6 +98,13 @@ void EKF4::predict(float dt)
 	Eigen::Matrix<float, EKF4_STATE_DIM, EKF4_STATE_DIM> I(Eigen::Matrix<float, EKF4_STATE_DIM, EKF4_STATE_DIM>::Identity());
 	Eigen::Matrix<float, EKF4_STATE_DIM, EKF4_STATE_DIM> PHI = I + F * dt;
 	_P = PHI * _P * PHI + _Q;
+}
+
+void EKF4::correctRV(const Vector3& r, const Vector3& v)
+{
+    Vector6 rv;
+    rv << r, v;
+    correctRV(rv);
 }
 
 void EKF4::correctRV(const Vector6& rv)

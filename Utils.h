@@ -6,6 +6,8 @@
 
 Vector4 quatFromEul(const Vector3& eul);
 
+Vector3 quatToEul(const Vector4& q);
+
 Vector3 quatToQuatVec(const Vector4& quat); // assume quat scalar part quat[0] > 0;
 
 Vector4 quatVecToQuat(const Vector3& quat); // assume quat scalar part quat[0] > 0;

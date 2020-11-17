@@ -24,6 +24,27 @@ Vector4 quatFromEul(const Vector3& eul)
 	 return Vector4(q0, q1, q2 ,q3);
 }
 
+Vector3 quatToEul(const Vector4& q)
+{
+    double sinr = 2.0f * (q[0] * q[1] + q[2] * q[3]);
+    double cosr = 1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]);
+    double roll = atan2(sinr, cosr);
+
+    double sinp = 2.0 * (q[0] * q[2] - q[3] * q[1]);
+    double pitch = 0.;
+    if (abs(sinp) >= 1) {
+        pitch = sinp / fabs (sinp) * 3.1415 / 2.0;
+    }
+    else {
+        pitch = asin(sinp);
+    }
+
+    double siny = 2.0 * (q[0] * q[3] + q[1] * q[2]);
+    double cosy = 1.0 - 2.0 * (q[2] * q[2] + q[3] * q[3]);
+    double yaw = atan2(siny, cosy);
+    return Vector3(roll, pitch, yaw);
+}
+
 Vector3 quatToQuatVec(const Vector4& q) // assume quat scalar part quat[0] > 0;
 {
 	Vector3 qv(q[1], q[2], q[3]);

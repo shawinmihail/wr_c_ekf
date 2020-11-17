@@ -14,6 +14,7 @@ public:
 	EKF4();
 	void predict(float dt);
 	void correctRV(const Vector6& rv);
+	void correctRV(const Vector3& r, const Vector3& v);
 	void correctU(const Vector3& v);
 	void correctA(const Vector3& a);
 	void correctQ2(const Vector3& dr1, const Vector3& dr2);
