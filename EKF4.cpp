@@ -14,16 +14,19 @@ EKF4::EKF4() :
 	O33(Eigen::Matrix<float, 3, 3>::Zero()),
 	O34(Eigen::Matrix<float, 3, 4>::Zero()),
 	O43(Eigen::Matrix<float, 4, 3>::Zero()),
-	E33(Eigen::Matrix<float, 3, 3>::Identity()),
-	// smoothed init
-	_a_smoothed(0.f, 0.f, 10.f),
-	_w_smoothed(0.f, 0.f, 0.f),
-	_K_a_smoothed(0.66f),
-	_K_w_smoothed(0.66f)
+	E33(Eigen::Matrix<float, 3, 3>::Identity())
 {
-	_X = Ekf4_fullState::Zero();
-	_X(6) = 1.f;
 
+}
+
+void EKF4::initParams()
+{
+    // smoothed init
+	_a_smoothed = Vector3(0.f, 0.f, 10.f);
+	_w_smoothed = Vector3(0.f, 0.f, 0.f);
+	_K_a_smoothed = 0.66f;
+	_K_w_smoothed = 0.66f;
+    
 	// init Q
 	Ekf4_state qDiag;
 	qDiag << /*r*/ 1e-0f, 1e-0f, 1e-0f, /*v*/ 1e-1f, 1e-1f, 1e-1f, /*q*/ 1e-1f, 1e-1f, 1e-1f;
@@ -59,6 +62,26 @@ EKF4::EKF4() :
 	_drBshcGnns << 0.0f, 0.0f, 0.6f;
 	_drSlave1 << 0.73f, 0.23f, 0.0f;
 	_drSlave2 << 0.73f, -0.23f, 0.0f;
+}
+
+void EKF4::reset(const Vector3& r0)
+{
+    initParams();
+    Vector3 v0(Vector3::Zero());
+    Vector4 q0(1.0f, 0.0f, 0.0f, 0.0f);
+    _X << r0, v0, q0;
+}
+
+void EKF4::calibSlavesWithSample(const Vector3& dr1, const Vector3& dr2)
+{
+    // assume slaves attached symmetric
+    Vector3 d = dr1/2.0f + dr2/2.0f;
+    Vector3 dh(d[0], d[1], 0.f);
+    Vector4 q = quatBetweenVectors(dh, Vector3(1.f, 0.f, 0.f));
+    _drSlave1 = quatRotate(q, dr1);
+    _drSlave2 = quatRotate(q, dr2);
+    //std::cout << _drSlave1 << std::endl;
+    //std::cout << _drSlave2 << std::endl;
 }
 
 void EKF4::predict(float dt)

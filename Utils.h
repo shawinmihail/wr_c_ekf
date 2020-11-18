@@ -8,10 +8,6 @@ Vector4 quatFromEul(const Vector3& eul);
 
 Vector3 quatToEul(const Vector4& q);
 
-Vector3 quatToQuatVec(const Vector4& quat); // assume quat scalar part quat[0] > 0;
-
-Vector4 quatVecToQuat(const Vector3& quat); // assume quat scalar part quat[0] > 0;
-
 Vector4 quatMultiply(const Vector4& q1, const Vector4& q2);
 
 Vector4 quatInverse(const Vector4& q);
@@ -21,6 +17,8 @@ Vector3 quatRotate(const Vector4& q, const Vector3& v);
 Eigen::Matrix<float, 3, 3> quatToMatrix(const Vector4& q);
 
 Eigen::Matrix<float, 3, 3> crossOperator( const Vector3& v);
+
+Vector4 quatBetweenVectors(const Vector3& v1, const Vector3& v2);
 
 // lin
 

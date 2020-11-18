@@ -12,6 +12,9 @@ class EKF4
 {
 public:
 	EKF4();
+    void initParams();
+    void reset(const Vector3& r0);
+    void calibSlavesWithSample(const Vector3& dr1, const Vector3& dr2);
 	void predict(float dt);
 	void correctRV(const Vector6& rv);
 	void correctRV(const Vector3& r, const Vector3& v);

@@ -45,48 +45,6 @@ Vector3 quatToEul(const Vector4& q)
     return Vector3(roll, pitch, yaw);
 }
 
-Vector3 quatToQuatVec(const Vector4& q) // assume quat scalar part quat[0] > 0;
-{
-	Vector3 qv(q[1], q[2], q[3]);
-
-	if (q[0] < 0.0f)
-	{
-		float sinHalfAlpha = qv.norm();
-		if (sinHalfAlpha < UTILS_EPS)
-		{
-			qv = Vector3(0.0f, 0.0f, 0.0f);
-			return qv;
-		};
-		if (sinHalfAlpha > 1.0f)
-		{
-			sinHalfAlpha = 1.0f - UTILS_EPS; // garanteed for asin exists
-		}
-		qv = qv / sinHalfAlpha; // pin
-		float alpha = 2.0f * asin(sinHalfAlpha);
-		float pi = 3.1415f; // use WGS4 PI here;
-		float alphaNew = 2.0f * pi - alpha; // rotate to another dir
-
-		float sinHalfNewAlpha = sin(alphaNew / 2.0f);
-		qv = -qv * sinHalfNewAlpha;
-	}
-	return qv;
-}
-
-Vector4 quatVecToQuat(const Vector3& qv) // assume quat scalar part quat[0] > 0;
-{
-	float q0Square = 1 - qv[0] * qv[0] - qv[1] * qv[1] - qv[2] * qv[2];
-	if (q0Square < 0.0f) // possible in case of numerical integration error
-	{
-		q0Square = UTILS_EPS;
-	} 
-	float q0 = sqrt(q0Square);
-
-	Vector4 q(q0, qv[0], qv[1], qv[2]);
-	q = q / q.norm();
-
-	return q;
-}
-
 Vector4 quatMultiply(const Vector4& q, const Vector4& r)
 {
 	Vector4 p;
@@ -141,6 +99,28 @@ Eigen::Matrix<float, 3, 3> crossOperator(const Vector3& v)
 		-v(1), v(0), 0.f;
 	return R;
 }
+
+Vector4 quatBetweenVectors(const Vector3& v1, const Vector3& v2)
+{
+    double eps = 1e-6;
+    if ((v1.norm() < eps) || (v2.norm() < eps)) 
+    {
+        return Vector4(1.f, 0.f, 0.f, 0.f);
+    }
+    
+    Vector3 pin = v1.cross(v2);
+    double w = sqrtf((v1.norm() * v1.norm()) * (v2.norm() * v2.norm())) + v1.dot(v2);
+    
+    Vector4 q(w, pin[0], pin[1], pin[2]);
+    if (q.norm() < eps)
+    {
+        return Vector4 (0.f,0.f,0.f,1.f);
+    }
+    
+    q.normalize();
+    return q;
+}
+
 
 Eigen::Matrix<float, 3, 4> quatRotateLinearizationQ(const Vector4& q, const Vector3& v)
 {
