@@ -262,7 +262,7 @@ Ekf4_fullState EKF4::getEstState()
 	return _X;
 }
 
-Ekf4_fullState getEstTargetState()
+Ekf4_fullState EKF4::getEstTargetState()
 {
  	Vector3 r = _X.segment(0, 3);
 	Vector3 v = _X.segment(3, 3);

@@ -25,6 +25,7 @@ public:
     void setQImuCalib(const Vector4& q);
 	Ekf4_fullState getEstState();
 	Ekf4_fullState getEstTargetState();
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
 private:
 	Vector3 smooth(const Vector3& sample, const Vector3& smoothed, float K);
