@@ -23,6 +23,7 @@ public:
 	void correctQ2(const Vector3& dr1, const Vector3& dr2);
 	void setImu(const Vector3& a, const Vector3& w);
 	Ekf4_fullState getEstState();
+	Ekf4_fullState getEstTargetState();
 
 private:
 	Vector3 smooth(const Vector3& sample, const Vector3& smoothed, float K);
@@ -41,8 +42,9 @@ private:
 	Eigen::Matrix<float, 3, 3> _R_U;
 	Eigen::Matrix<float, 3, 3> _R_A;
 
-	Vector3 _drImuGnns;
-	Vector3 _drBshcGnns;
+	Vector3 _drImuMaster;
+	Vector3 _drImuTarget;
+	Vector3 _drTargetMaster;
 	Vector3 _drSlave1;
 	Vector3 _drSlave2;
 

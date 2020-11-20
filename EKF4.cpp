@@ -58,8 +58,10 @@ void EKF4::initParams()
 
 
 	//gpsAttachmentShift
-	_drImuGnns << -0.4f, 0.0f, 0.4f;
-	_drBshcGnns << 0.0f, 0.0f, 0.6f;
+	_drImuMaster << -0.4f, 0.0f, 0.2f;
+	_drImuMaster << -0.4f, 0.0f, 0.2f;
+	_drImuTarget << -0.4f, 0.0f, -0.3f;
+	_drTargetMaster = _drImuMaster - _drImuTarget;
 	_drSlave1 << 0.73f, 0.23f, 0.0f;
 	_drSlave2 << 0.73f, -0.23f, 0.0f;
 }
@@ -138,16 +140,16 @@ void EKF4::correctRV(const Vector6& rv)
 
 	// mes model
 	// Z[rgnns vgnns]
-	Vector3 Zr = r + quatRotate(q, _drImuGnns);
-	Vector3 Zv = v + quatRotate(q, _w_smoothed.cross(_drImuGnns));
+	Vector3 Zr = r + quatRotate(q, _drImuMaster);
+	Vector3 Zv = v + quatRotate(q, _w_smoothed.cross(_drImuMaster));
 	Vector6 Zx;
 	Zx << Zr, Zv;
 	Vector6 dz = rv - Zx;
 
 	// H
-	Eigen::Matrix<float, 3, 4> Zrq_full = quatRotateLinearizationQ(q, _drImuGnns);
+	Eigen::Matrix<float, 3, 4> Zrq_full = quatRotateLinearizationQ(q, _drImuMaster);
 	Eigen::Matrix<float, 3, 3> Zrq = Zrq_full.block<3, 3>(0, 1);
-	Eigen::Matrix<float, 3, 4> Zvq_full = quatRotateLinearizationQ(q, _w_smoothed.cross(_drImuGnns));
+	Eigen::Matrix<float, 3, 4> Zvq_full = quatRotateLinearizationQ(q, _w_smoothed.cross(_drImuMaster));
 	Eigen::Matrix<float, 3, 3> Zvq = Zvq_full.block<3, 3>(0, 1);
 
 	Eigen::Matrix<float, 3, EKF4_STATE_DIM> H1;
@@ -221,11 +223,11 @@ void EKF4::correctU(const Vector3& vMes)
 
 	// mes model
 	// Z[vgnns]
-	Vector3 Zx = quatRotate(q, ex * v.norm()) + quatRotate(q, _w_smoothed.cross(_drBshcGnns));
+	Vector3 Zx = quatRotate(q, ex * v.norm()) + quatRotate(q, _w_smoothed.cross(_drTargetMaster));
 	Vector3 dz = vMes - Zx;
 
 	// H
-	Eigen::Matrix<float, 3, 4> Zuq_full = quatRotateLinearizationQ(q, ex * v.norm() + _w_smoothed.cross(_drBshcGnns));
+	Eigen::Matrix<float, 3, 4> Zuq_full = quatRotateLinearizationQ(q, ex * v.norm() + _w_smoothed.cross(_drTargetMaster));
 	Eigen::Matrix<float, 3, 3> Zuq = Zuq_full.block<3, 3>(0, 1);
 	Eigen::Matrix<float, 3, 3> Zuv = Eigen::Matrix<float, 3, 3>::Zero();
 	Zuv.row(0) = normVect3Linearization(v); // TODO  chek v is not zero
@@ -258,6 +260,18 @@ void EKF4::correctA(const Vector3& aMes)
 Ekf4_fullState EKF4::getEstState()
 {
 	return _X;
+}
+
+Ekf4_fullState getEstTargetState()
+{
+ 	Vector3 r = _X.segment(0, 3);
+	Vector3 v = _X.segment(3, 3);
+	Vector4 q = _X.segment(6, 4);
+ 	Vector3 rTarget = r + quatRotate(q, _drImuTarget);
+ 	Vector3 vTarget = v + quatRotate(q, _drImuTarget.cross(_w_smoothed));
+    Ekf4_fullState targetState;
+    targetState << rTarget, vTarget, q;
+    return targetState;
 }
 
 void EKF4::setImu(const Vector3& a, const Vector3& w)
