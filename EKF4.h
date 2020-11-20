@@ -22,6 +22,7 @@ public:
 	void correctA(const Vector3& a);
 	void correctQ2(const Vector3& dr1, const Vector3& dr2);
 	void setImu(const Vector3& a, const Vector3& w);
+    void setQImuCalib(const Vector4& q);
 	Ekf4_fullState getEstState();
 	Ekf4_fullState getEstTargetState();
 
@@ -31,6 +32,7 @@ private:
 	Vector3 _w_smoothed;
 	float _K_a_smoothed;
 	float _K_w_smoothed;
+    Vector4 _qImuCalib;
 
 private:
 	Ekf4_fullState _X;

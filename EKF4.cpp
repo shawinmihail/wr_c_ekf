@@ -276,8 +276,13 @@ Ekf4_fullState getEstTargetState()
 
 void EKF4::setImu(const Vector3& a, const Vector3& w)
 {
-	_a_smoothed = smooth(a, _a_smoothed, _K_a_smoothed);
-	_w_smoothed = smooth(w, _w_smoothed, _K_w_smoothed);
+	_a_smoothed = smooth(quatRotate(_qImuCalib, a), _a_smoothed, _K_a_smoothed);
+	_w_smoothed = smooth(quatRotate(_qImuCalib, w), _w_smoothed, _K_w_smoothed);
+}
+
+void EKF4::setQImuCalib(const Vector4& q)
+{
+    _qImuCalib = q;
 }
 
 Vector3 EKF4::smooth(const Vector3& sample, const Vector3& smoothed, float K)
