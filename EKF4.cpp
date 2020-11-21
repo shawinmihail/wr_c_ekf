@@ -14,7 +14,9 @@ EKF4::EKF4() :
 	O33(Eigen::Matrix<float, 3, 3>::Zero()),
 	O34(Eigen::Matrix<float, 3, 4>::Zero()),
 	O43(Eigen::Matrix<float, 4, 3>::Zero()),
-	E33(Eigen::Matrix<float, 3, 3>::Identity())
+	E33(Eigen::Matrix<float, 3, 3>::Identity()),
+	_daImuCalib(Vector3::Zero()),
+	_dwImuCalib(Vector3::Zero())
 {
 
 }
@@ -24,12 +26,12 @@ void EKF4::initParams()
     // smoothed init
 	_a_smoothed = Vector3(0.f, 0.f, 10.f);
 	_w_smoothed = Vector3(0.f, 0.f, 0.f);
-	_K_a_smoothed = 0.66f;
-	_K_w_smoothed = 0.66f;
+	_K_a_smoothed = 0.33f;
+	_K_w_smoothed = 0.33f;
     
 	// init Q
 	Ekf4_state qDiag;
-	qDiag << /*r*/ 1e-0f, 1e-0f, 1e-0f, /*v*/ 1e-1f, 1e-1f, 1e-1f, /*q*/ 1e-1f, 1e-1f, 1e-1f;
+	qDiag << /*r*/ 1e-0f, 1e-0f, 1e-0f, /*v*/ 1e-1f, 1e-1f, 1e-1f, /*q*/ 1e-4f, 1e-4f, 1e-4f;
 	_Q = qDiag.asDiagonal();
 
 	// init P
@@ -53,7 +55,7 @@ void EKF4::initParams()
 
 	// init R_Q2
 	Vector6 rDiag_Q2;
-	rDiag_Q2 << 1e-6f, 1e-6f, 1e-6f, 1e-6f, 1e-6f, 1e-6f;
+	rDiag_Q2 << 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f;
 	_R_Q2 = rDiag_Q2.asDiagonal();
 
 
@@ -275,13 +277,19 @@ Ekf4_fullState EKF4::getEstTargetState()
 
 void EKF4::setImu(const Vector3& a, const Vector3& w)
 {
-	_a_smoothed = smooth(quatRotate(_qImuCalib, a), _a_smoothed, _K_a_smoothed);
-	_w_smoothed = smooth(quatRotate(_qImuCalib, w), _w_smoothed, _K_w_smoothed);
+	_a_smoothed = smooth(quatRotate(_qImuCalib, a - _daImuCalib), _a_smoothed, _K_a_smoothed);
+	_w_smoothed = smooth(quatRotate(_qImuCalib, w - _dwImuCalib), _w_smoothed, _K_w_smoothed);
 }
 
 void EKF4::setQImuCalib(const Vector4& q)
 {
     _qImuCalib = q;
+}
+
+void EKF4::setBiasesImuCalib(const Vector3& da, const Vector3& dw)
+{
+    _daImuCalib = da;
+    _dwImuCalib = dw;
 }
 
 Vector3 EKF4::smooth(const Vector3& sample, const Vector3& smoothed, float K)
