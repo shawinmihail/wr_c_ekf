@@ -58,9 +58,8 @@ void EKF4::initParams()
 
 
 	//gpsAttachmentShift
-	_drImuMaster << -0.4f, 0.0f, 0.2f;
-	_drImuMaster << -0.4f, 0.0f, 0.2f;
-	_drImuTarget << -0.4f, 0.0f, -0.3f;
+	_drImuMaster << -0.28f, 0.0f, 0.1f;
+	_drImuTarget << -0.28f, 0.0f, -0.48f;
 	_drTargetMaster = _drImuMaster - _drImuTarget;
 	_drSlave1 << 0.73f, 0.23f, 0.0f;
 	_drSlave2 << 0.73f, -0.23f, 0.0f;
@@ -289,4 +288,14 @@ Vector3 EKF4::smooth(const Vector3& sample, const Vector3& smoothed, float K)
 {
 	Vector3 res = smoothed + K * (sample - smoothed);
 	return res;
+}
+
+Vector3 EKF4::getDrSlave1()
+{
+    return _drSlave1;
+}
+
+Vector3 EKF4::getDrSlave2()
+{
+    return _drSlave2;
 }

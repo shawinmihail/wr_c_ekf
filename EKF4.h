@@ -25,6 +25,8 @@ public:
     void setQImuCalib(const Vector4& q);
 	Ekf4_fullState getEstState();
 	Ekf4_fullState getEstTargetState();
+    Vector3 getDrSlave1();
+    Vector3 getDrSlave2();
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
 private:
