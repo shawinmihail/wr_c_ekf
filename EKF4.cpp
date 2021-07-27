@@ -75,6 +75,12 @@ void EKF4::reset(const Vector3& r0)
     _X << r0, v0, q0;
 }
 
+void EKF4::setSlavesCalib(const Vector3& slave1, const Vector3& slave2)
+{
+    _drSlave1 = slave1;
+    _drSlave2 = slave2;
+}
+
 void EKF4::calibSlavesWithSample(const Vector3& dr1, const Vector3& dr2)
 {
     // assume slaves attached symmetric

@@ -24,6 +24,7 @@ public:
 	void setImu(const Vector3& a, const Vector3& w);
     void setQImuCalib(const Vector4& q);
     void setBiasesImuCalib(const Vector3& da, const Vector3& dw);
+    void setSlavesCalib(const Vector3& slave1, const Vector3& slave2);
 	Ekf4_fullState getEstState();
 	Ekf4_fullState getEstTargetState();
     Vector3 getDrSlave1();
