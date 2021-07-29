@@ -63,8 +63,6 @@ void EKF4::initParams()
 	_drImuMaster << -0.28f, 0.0f, 0.1f;
 	_drImuTarget << -0.28f, 0.0f, -0.48f;
 	_drTargetMaster = _drImuMaster - _drImuTarget;
-	_drSlave1 << 0.73f, 0.23f, 0.0f;
-	_drSlave2 << 0.73f, -0.23f, 0.0f;
 }
 
 void EKF4::reset(const Vector3& r0)
