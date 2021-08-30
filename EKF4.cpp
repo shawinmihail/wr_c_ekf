@@ -79,16 +79,14 @@ void EKF4::setSlavesCalib(const Vector3& slave1, const Vector3& slave2)
     _drSlave2 = slave2;
 }
 
-void EKF4::calibSlavesWithSample(const Vector3& dr1, const Vector3& dr2)
+void EKF4::calibSlavesWithSample(const Vector3& dr1, const Vector3& dr2, Vector3& slave1_res, Vector3& slave2_res)
 {
     // assume slaves attached symmetric
     Vector3 d = dr1/2.0f + dr2/2.0f;
     Vector3 dh(d[0], d[1], 0.f);
     Vector4 q = quatBetweenVectors(dh, Vector3(1.f, 0.f, 0.f));
-    _drSlave1 = quatRotate(q, dr1);
-    _drSlave2 = quatRotate(q, dr2);
-    //std::cout << _drSlave1 << std::endl;
-    //std::cout << _drSlave2 << std::endl;
+    slave1_res = quatRotate(q, dr1);
+    slave2_res = quatRotate(q, dr2);
 }
 
 void EKF4::predict(float dt)
