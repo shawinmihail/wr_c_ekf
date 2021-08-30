@@ -65,12 +65,43 @@ void EKF4::initParams()
 	_drTargetMaster = _drImuMaster - _drImuTarget;
 }
 
-void EKF4::reset(const Vector3& r0)
+bool EKF4::reset(const Vector3& r0, const Vector3& s1, const Vector3& s2, float slaves_accuracy)
 {
+    bool is_ok = false;
+    
+
     initParams();
     Vector3 v0(Vector3::Zero());
     Vector4 q0(1.0f, 0.0f, 0.0f, 0.0f);
+    
+    float eps = 0.5;
+    for (int i = 0; i < 99; i++)
+    {
+
+    
+        Eigen::Matrix<float, 6, 1> d;
+        d << quatRotate(q0, _drSlave1) - s1,  quatRotate(q0, _drSlave2) - s2;
+        Eigen::Matrix<float, 3, 4> Jq1 = quatRotateLinearizationQ(q0, _drSlave1);
+        Eigen::Matrix<float, 3, 4> Jq2 = quatRotateLinearizationQ(q0, _drSlave2);
+        Eigen::MatrixXf Jq(6, 4);
+        Jq << Jq1, Jq2;
+        Eigen::MatrixXf A = Jq.completeOrthogonalDecomposition().pseudoInverse();
+        
+        q0 = q0 - eps * A * d;
+        q0 = q0 / q0.norm();
+        float y = d.norm();
+    
+        if (y < 0.01)
+        {
+            is_ok = true;
+            break;
+        }
+        //std::cout << y << std::endl;
+    }
+    
     _X << r0, v0, q0;
+    
+    return is_ok;
 }
 
 void EKF4::setSlavesCalib(const Vector3& slave1, const Vector3& slave2)

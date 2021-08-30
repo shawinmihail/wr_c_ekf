@@ -13,7 +13,7 @@ class EKF4
 public:
 	EKF4();
     void initParams();
-    void reset(const Vector3& r0);
+    bool reset(const Vector3& r0, const Vector3& s1, const Vector3& s2, float slaves_accuracy);
     void calibSlavesWithSample(const Vector3& dr1, const Vector3& dr2, Vector3& slave1_res, Vector3& slave2_res);
 	void predict(float dt);
 	void correctRV(const Vector6& rv);
