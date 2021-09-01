@@ -91,7 +91,7 @@ bool EKF4::reset(const Vector3& r0, const Vector3& s1, const Vector3& s2, float 
         q0 = q0 / q0.norm();
         float y = d.norm();
     
-        if (y < 0.01)
+        if (y < slaves_accuracy*2)
         {
             is_ok = true;
             break;
