@@ -31,7 +31,7 @@ void EKF4::initParams()
     
 	// init Q
 	Ekf4_state qDiag;
-	qDiag << /*r*/ 1e-0f, 1e-0f, 1e-0f, /*v*/ 1e-1f, 1e-1f, 1e-1f, /*q*/ 1e-4f, 1e-4f, 1e-4f;
+	qDiag << /*r*/ 1e-0f, 1e-0f, 1e-0f, /*v*/ 1e-1f, 1e-1f, 1e-1f, /*q*/ 1e-4f, 1e-4f, 1e-4f, 1e-4f;
 	_Q = qDiag.asDiagonal();
 
 	// init P
@@ -138,25 +138,25 @@ void EKF4::predict(float dt)
 
 	/* cov */
 	Eigen::Matrix<float, 4, 4> Mqq_full = poissonEqLinearizationQ(_w_smoothed);
-	Eigen::Matrix<float, 3, 3> Mqq = Mqq_full.block<3, 3>(1, 1);
+	//Eigen::Matrix<float, 3, 3> Mqq = Mqq_full.block<3, 3>(1, 1);
 	Eigen::Matrix<float, 4, 3> Mqw = poissonEqLinearizationW(q0, _w_smoothed);
 	Eigen::Matrix<float, 3, 4> Mvq_full = -crossOperator(v0) * quatRotateLinearizationQ(q0, _w_smoothed);
-	Eigen::Matrix<float, 3, 3> Mvq = Mvq_full.block<3, 3>(0, 1);
+	//Eigen::Matrix<float, 3, 3> Mvq = Mvq_full.block<3, 3>(0, 1);
 
 	Eigen::Matrix<float, 3, EKF4_STATE_DIM> Fr;
 	Eigen::Matrix<float, 3, EKF4_STATE_DIM> Fv;
-	Eigen::Matrix<float, 3, EKF4_STATE_DIM> Fq;
+	Eigen::Matrix<float, 4, EKF4_STATE_DIM> Fq;
 
-	Fr << O33, E33, O33;
-	Fv << O33, O33, Mvq;
-	Fq << O33, O33, Mqq;
+	Fr << O33, E33, O34;
+	Fv << O33, O33, Mvq_full;
+	Fq << O43, O43, Mqq_full;
 
 	Eigen::Matrix<float, EKF4_STATE_DIM, EKF4_STATE_DIM> F;
 	F << Fr, Fv, Fq;
 
 	Eigen::Matrix<float, EKF4_STATE_DIM, EKF4_STATE_DIM> I(Eigen::Matrix<float, EKF4_STATE_DIM, EKF4_STATE_DIM>::Identity());
 	Eigen::Matrix<float, EKF4_STATE_DIM, EKF4_STATE_DIM> PHI = I + F * dt;
-	_P = PHI * _P * PHI + _Q;
+	_P = PHI * _P * PHI.transpose() + _Q;
 }
 
 void EKF4::correctRV(const Vector3& r, const Vector3& v)
@@ -182,27 +182,24 @@ void EKF4::correctRV(const Vector6& rv)
 
 	// H
 	Eigen::Matrix<float, 3, 4> Zrq_full = quatRotateLinearizationQ(q, _drImuMaster);
-	Eigen::Matrix<float, 3, 3> Zrq = Zrq_full.block<3, 3>(0, 1);
+	//Eigen::Matrix<float, 3, 3> Zrq = Zrq_full.block<3, 3>(0, 1);
 	Eigen::Matrix<float, 3, 4> Zvq_full = quatRotateLinearizationQ(q, _w_smoothed.cross(_drImuMaster));
-	Eigen::Matrix<float, 3, 3> Zvq = Zvq_full.block<3, 3>(0, 1);
+	//Eigen::Matrix<float, 3, 3> Zvq = Zvq_full.block<3, 3>(0, 1);
 
 	Eigen::Matrix<float, 3, EKF4_STATE_DIM> H1;
 	Eigen::Matrix<float, 3, EKF4_STATE_DIM> H2;
 	Eigen::Matrix<float, 6, EKF4_STATE_DIM> H;
-	H1 << E33, O33, Zrq;
-	H2 << O33, E33, Zvq;
+	H1 << E33, O33, Zrq_full;
+	H2 << O33, E33, Zvq_full;
 	H << H1, H2;
 
 
 	// ordinary KF
 	Eigen::Matrix<float, 6, 6> Rk = _R_RV + H * _P * H.transpose();
 	Eigen::Matrix<float, EKF4_STATE_DIM, 6> K = _P * H.transpose() * (Rk.inverse());
-	K = K;
 	_P = _P - K * H * _P;
 	Ekf4_state dx = K * dz;
-	Ekf4_fullState dx_full;
-	dx_full << dx.segment(0, 6), 0.f, dx.segment(6, 3);
-	_X = _X + dx_full;
+	_X = _X + dx;
 	_X.segment(6, 4).normalize();
 }
 
@@ -224,15 +221,15 @@ void EKF4::correctQ2(const Vector3& dr1, const Vector3& dr2)
 
 	// H
 	Eigen::Matrix<float, 3, 4> Zdr1_full = quatRotateLinearizationQ(q, _drSlave1);
-	Eigen::Matrix<float, 3, 3> Zdr1 = Zdr1_full.block<3, 3>(0, 1);
+	//Eigen::Matrix<float, 3, 3> Zdr1 = Zdr1_full.block<3, 3>(0, 1);
 	Eigen::Matrix<float, 3, 4> Zdr2_full = quatRotateLinearizationQ(q, _drSlave2);
-	Eigen::Matrix<float, 3, 3> Zdr2 = Zdr2_full.block<3, 3>(0, 1);
+	//Eigen::Matrix<float, 3, 3> Zdr2 = Zdr2_full.block<3, 3>(0, 1);
 
 	Eigen::Matrix<float, 3, EKF4_STATE_DIM> H1;
 	Eigen::Matrix<float, 3, EKF4_STATE_DIM> H2;
 	Eigen::Matrix<float, 6, EKF4_STATE_DIM> H;
-	H1 << O33, O33, Zdr1;
-	H2 << O33, O33, Zdr2;
+	H1 << O33, O33, Zdr1_full;
+	H2 << O33, O33, Zdr2_full;
 	H << H1, H2;
 
 	// ordinary KF
@@ -240,15 +237,15 @@ void EKF4::correctQ2(const Vector3& dr1, const Vector3& dr2)
 	Eigen::Matrix<float, EKF4_STATE_DIM, 6> K = _P * H.transpose() * (Rk.inverse());
 	_P = _P - K * H * _P;
 	Ekf4_state dx = K * dz;
-	Ekf4_fullState dx_full;
-	dx_full << dx.segment(0, 6), 0.f, dx.segment(6, 3);
-	_X = _X + dx_full;
+	_X = _X + dx;
 	_X.segment(6, 4).normalize();
 }
 
 
+/*
 void EKF4::correctU(const Vector3& vMes)
 {
+    
 	Vector3 r = _X.segment(0, 3);
 	Vector3 v = _X.segment(3, 3);
 	Vector4 q = _X.segment(6, 4);
@@ -281,7 +278,9 @@ void EKF4::correctU(const Vector3& vMes)
 	_X = _X + dx_full;
 	_X.segment(6, 4).normalize();
 }
+*/
 
+/*
 void EKF4::correctA(const Vector3& aMes)
 {
 	Vector3 r = _X.segment(0, 3);
@@ -290,20 +289,21 @@ void EKF4::correctA(const Vector3& aMes)
 
 	// TODO copy alg. from matlab.
 }
+*/
 
-Ekf4_fullState EKF4::getEstState()
+Ekf4_state EKF4::getEstState()
 {
 	return _X;
 }
 
-Ekf4_fullState EKF4::getEstTargetState()
+Ekf4_state EKF4::getEstTargetState()
 {
  	Vector3 r = _X.segment(0, 3);
 	Vector3 v = _X.segment(3, 3);
 	Vector4 q = _X.segment(6, 4);
  	Vector3 rTarget = r + quatRotate(q, _drImuTarget);
  	Vector3 vTarget = v + quatRotate(q, _drImuTarget.cross(_w_smoothed));
-    Ekf4_fullState targetState;
+    Ekf4_state targetState;
     targetState << rTarget, vTarget, q;
     return targetState;
 }
