@@ -121,6 +121,17 @@ Vector4 quatBetweenVectors(const Vector3& v1, const Vector3& v2)
     return q;
 }
 
+float shortestRotation(float from, float to)
+{
+    float pi = 3.1415;
+    float da = fmod((to - from + pi), 2*pi) - pi;
+    if (da < -pi)
+    {
+        da = da + 2*pi;
+    }
+    return da;
+}
+
 
 Eigen::Matrix<float, 3, 4> quatRotateLinearizationQ(const Vector4& q, const Vector3& v)
 {
@@ -193,5 +204,107 @@ Eigen::Matrix<float, 1, 3> normVect3Linearization(const Vector3& v)
 	float vn = v.norm();
 	res << v(0) / vn, v(1) / vn, v(2) / vn;
 	return res;
+}
+
+Vector3 eulKinematics(const Vector3& e, const Vector3& w)
+{
+    // Need to check on theta +- pi/2
+    float psi = e[2];
+    float theta = e[1];
+    float phi = e[0];
+    Eigen::Matrix<float, 3, 3> A;
+    A <<   1,   sin(phi)*tan(theta),   cos(phi)*tan(theta),
+           0,   cos(phi),              -sin(phi),
+           0,   sin(phi)/cos(theta),   cos(phi)/cos(theta);
+
+    Vector3 eul_dot = A*w;
+    return eul_dot;
+}
+
+Eigen::Matrix<float, 3, 3> eulToMatrix(const Vector3& e)
+{
+    float sa = sin(e[2]);
+    float ca = cos(e[2]);
+    float sb = sin(e[1]);
+    float cb = cos(e[1]);
+    float sg = sin(e[0]);
+    float cg = cos(e[0]);
+    
+    float R11 = ca * cb;
+    float R21 = sa * cb;
+    float R31 = -sb;
+
+    float R12 = ca * sb * sg  - sa * cg;
+    float R22 = sa * sb * sg + ca * cg;
+    float R32 = cb * sg;
+
+    float R13 = ca * sb * cg + sa *sg;
+    float R23 = sa * sb * cg - ca * sg;
+    float R33 = cb * cg;
+
+    Eigen::Matrix<float, 3, 3> R;
+    R <<   R11,   R12,   R13,
+           R21,   R22,   R23,
+           R31,   R32,   R33;
+
+    return R;
+}
+
+Eigen::Matrix<float, 3, 3> eulRotLinearization(const Vector3& e, const Vector3& w)
+{
+    
+    float se0 = sin(e[0]);
+    float se1 = sin(e[1]);
+    float se2 = sin(e[2]);
+    float ce0 = cos(e[0]);
+    float ce1 = cos(e[1]);
+    float ce2 = cos(e[2]);
+    
+    float A11 = w[1]*(se0*se2 + ce0*ce2*se1) + w[2]*(ce0*se2 - ce2*se0*se1);
+    float A12 = w[2]*ce0*ce1*ce2 - w[0]*ce2*se1 + w[1]*ce1*ce2*se0;
+    float A13 = w[2]*(ce2*se0 - ce0*se1*se2) - w[1]*(ce0*ce2 + se0*se1*se2) - w[0]*ce1*se2;
+
+    float A21 = -w[1]*(ce2*se0 - ce0*se1*se2) - w[2]*(ce0*ce2 + se0*se1*se2);
+    float A22 = w[2]*ce0*ce1*se2 - w[0]*se1*se2 + w[1]*ce1*se0*se2;
+    float A23 = w[2]*(se0*se2 + ce0*ce2*se1) - w[1]*(ce0*se2 - ce2*se0*se1) + w[0]*ce1*ce2;
+
+    float A31 = w[1]*ce0*ce1 - w[2]*ce1*se0;
+    float A32 = -w[0]*ce1 - w[2]*ce0*se1 -w[1]*se0*se1;
+    float A33 = 0;
+    
+    Eigen::Matrix<float, 3, 3> A;
+    A <<   A11,   A12,   A13,
+           A21,   A22,   A23,
+           A31,   A32,   A33;
+
+    return A;
+}
+
+Eigen::Matrix<float, 3, 3> eulKinLinearization(const Vector3& e, const Vector3& w)
+{
+    float c_phi = cos(e[2]);
+    float s_phi = sin(e[2]);
+    float t_theta = tan(e[1]);
+    float c_theta = cos(e[1]);
+    float s_theta = sin(e[1]);
+
+    float A11 = w[1]*c_phi*t_theta - w[2]*s_phi*t_theta;
+    float A12 = w[2]*c_phi*(t_theta*t_theta + 1) + w[1]*s_phi*(t_theta*t_theta + 1);
+    float A13 = 0;
+
+    float A21 = - w[2]*c_phi - w[1]*s_phi;
+    float A22 = 0;
+    float A23 = 0;
+
+    float A31 = (w[1]*c_phi)/c_theta - (w[2]*s_phi)/c_theta;
+    float A32 = (w[2]*c_phi*s_theta)/c_theta*c_theta + (w[1]*s_phi*s_theta)/c_theta*c_theta;
+    float A33 = 0;
+
+    Eigen::Matrix<float, 3, 3> A;
+    A <<   A11,   A12,   A13,
+           A21,   A22,   A23,
+           A31,   A32,   A33;
+
+    return A;
 }
 
