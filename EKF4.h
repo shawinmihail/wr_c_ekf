@@ -24,6 +24,8 @@ public:
     void setQImuCalib(const Vector4& q);
     void setBiasesImuCalib(const Vector3& da, const Vector3& dw);
     void setSlavesCalib(const Vector3& slave1, const Vector3& slave2);
+    void setSensorsGeometry(const Vector3& drImuMaster, const Vector3& drImuTarget);
+    //
 	Ekf4_state getEstState();
 	Ekf4_state getEstTargetState();
     Vector3 getDrSlave1();

@@ -57,12 +57,6 @@ void EKF4::initParams()
 	Vector6 rDiag_Q2;
 	rDiag_Q2 << 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f;
 	_R_Q2 = rDiag_Q2.asDiagonal();
-
-
-	//gpsAttachmentShift
-	_drImuMaster << -0.28f, 0.0f, 0.1f;
-	_drImuTarget << -0.28f, 0.0f, -0.48f;
-	_drTargetMaster = _drImuMaster - _drImuTarget;
 }
 
 bool EKF4::reset(const Vector3& r0, const Vector3& s1, const Vector3& s2, float slaves_accuracy)
@@ -109,6 +103,13 @@ void EKF4::setSlavesCalib(const Vector3& slave1, const Vector3& slave2)
     _drSlave1 = slave1;
     _drSlave2 = slave2;
 }
+
+void EKF4::setSensorsGeometry(const Vector3& drImuMaster, const Vector3& drImuTarget)
+{
+    _drImuMaster = drImuMaster;
+    _drImuTarget = drImuTarget;
+    _drTargetMaster = _drImuMaster - _drImuTarget;
+};
 
 void EKF4::calibSlavesWithSample(const Vector3& dr1, const Vector3& dr2, Vector3& slave1_res, Vector3& slave2_res)
 {
