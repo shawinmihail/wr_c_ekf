@@ -31,20 +31,55 @@ struct EkfUnicornInitParams
 class EkfUnicorn
 {
 public:
+    
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    
 	EkfUnicorn()
     {
-        reinit();
+        reset();
     };
     
-    void reinit()
+    bool reset()
     {
-        // reset only state, for change params 
-        // use setInitialParams(...) setSensorsGeometry(...) setAccSmoothParam(...)
+        /* 
+         * Reset only state.
+         * Use setInitialParams(...) setSensorsGeometry(...) setAccSmoothParam(...)
+         * to change params.
+         */ 
+        
         _a_smoothed = Vector3f::Zero();
         _a_smoothed_inited = false;
         _w = Vector3f::Zero();
         _X = EkfUnicornState::Zero();
-    }
+        
+        return true;
+    };
+    
+    bool reset(const Vector3f& r, const Vector3f& v, const Vector3f& a, const Vector3f& w)
+    {
+        /* 
+         * Reset only state.
+         * Use setInitialParams(...) setSensorsGeometry(...) setAccSmoothParam(...)
+         * to change params.
+         */ 
+        
+        _a_smoothed = Vector3f::Zero();
+        _a_smoothed_inited = false;
+        _w = Vector3f::Zero();
+        
+        float roll = 0; float pitch = 0;
+        rollPitchWithMeasuredAcc(a, roll, pitch);
+        _X << r, v, Vector3f(roll, pitch, 0);
+        
+        bool reset_is_ok =  true; // we should check reset is OK
+        
+        if(reset_is_ok)
+        {
+            updateImu(a, w);
+        }
+                
+        return reset_is_ok;
+    };
     
     void setInitialParams(const EkfUnicornInitParams& params)
     {
@@ -84,7 +119,7 @@ public:
         Vector3f rTarget = r + quatRotate(q, _drImuTarget);
         Vector3f vTarget = v + quatRotate(q, _drImuTarget.cross(_w));
         EkfUnicornState targetState;
-        targetState << rTarget, vTarget, q;
+        targetState << rTarget, vTarget, e;
         return targetState;
     };
     
@@ -116,16 +151,8 @@ public:
             
         _a_smoothed = smooth(a, _a_smoothed, _K_a_smoothed);
 	    _w = w;
-    }
-    
-    void defineInitialStateNoYaw(const Vector3f& r, const Vector3f& v)
-    {
-        // we use smoothed acc to define initial roll and pitch
-        float roll = 0; float pitch = 0;
-        rollPitchWithMeasuredAcc(_a_smoothed, roll, pitch);
-        _X << r, v, roll, pitch, 0;
     };
-    
+        
 	void predict(float dt)
     {
         /* state */
@@ -170,7 +197,7 @@ public:
         * We can update pitch and roll with eulKinematics,
         * cause that derivateves do not depend on yaw.
         */
-        
+                
         /* state */
         Vector3f r0 = _X.segment(0, 3);
         Vector3f v0 = _X.segment(3, 3);
@@ -207,12 +234,16 @@ public:
         Matrix<float, EKF_UNICORN_DIM-1, EKF_UNICORN_DIM-1> I_no_yaw;
         I_no_yaw << Matrix<float, EKF_UNICORN_DIM-1, EKF_UNICORN_DIM-1>::Identity();
         Matrix<float, EKF_UNICORN_DIM-1, EKF_UNICORN_DIM-1> PHI_no_yaw = I_no_yaw + F_no_yaw * dt;
+        //std::cout << "P_no_yaw\n" << P_no_yaw;
+        //std::cout << "PHI_no_yaw\n" << PHI_no_yaw;
+        //std::cout << "Q_no_yaw\n" << Q_no_yaw;
         P_no_yaw = PHI_no_yaw * P_no_yaw * PHI_no_yaw.transpose() + Q_no_yaw*dt;
+        
         
         _P.block<8, 8>(0,0) = P_no_yaw;
     };
     
-    void correct(const Vector3f& rZ, const Vector3f& vZ)
+    Vector9 correct(const Vector3f& rZ, const Vector3f& vZ)
     {
         float roll_a = 0; float pitch_a = 0;
         rollPitchWithMeasuredAcc(_a_smoothed, roll_a, pitch_a);
@@ -222,41 +253,47 @@ public:
         pitchYawWithMeasuredVel(vZ, yaw0, pitch_v, yaw_v);
         
         Vector3f eZ(roll_a, pitch_v, yaw_v);
-        correct(rZ, vZ, eZ);
-    }
+        Vector9 discrepancy = correct(rZ, vZ, eZ);
+        return discrepancy;
+    };
     
-    void correctNoYaw(const Vector3f& rZ, const Vector3f& vZ)
+    Vector9 correctNoYaw(const Vector3f& rZ, const Vector3f& vZ)
     {
         float roll_a = 0; float pitch_a = 0;
         rollPitchWithMeasuredAcc(_a_smoothed, roll_a, pitch_a);
         
         Vector3f eZ(roll_a, pitch_a, 0);
-        std::cout << "eZ:\n" << eZ  << std::endl;
-        correctNoYaw(rZ, vZ, eZ);
-    }
-    
+        Vector9 discrepancy = correctNoYaw(rZ, vZ, eZ);
+        
+        return discrepancy;
+    };
     
 private:
     
-	void correct(const Vector3f& rZ, const Vector3f& vZ, const Vector3f& eZ)
+    Vector9 stateToMesSpace(const EkfUnicornState& state) const
     {
-        Vector3f rX = _X.segment(0, 3);
-        Vector3f vX = _X.segment(3, 3);
-        Vector3f eX = _X.segment(6, 3);
+        Vector3f rX = state.segment(0, 3);
+        Vector3f vX = state.segment(3, 3);
+        Vector3f eX = state.segment(6, 3);
         Vector4f qX = quatFromEul(eX);
-        Vector9 Z;
-        Z << rZ, vZ, eZ;
-
-        // mes model
-        // Z[rgnns vgnns e_mes]
+        
         Vector3f Zr = rX + quatRotate(qX, _drImuMaster);
         Vector3f Zv = vX + quatRotate(qX, _w.cross(_drImuMaster));
         Vector3f Ze = eX;
         Vector9 Zx;
         Zx << Zr, Zv, Ze;
+        return Zx;
+    }
+    
+	Vector9 correct(const Vector3f& rZ, const Vector3f& vZ, const Vector3f& eZ)
+    {
+        Vector9 Z;
+        Z << rZ, vZ, eZ;
+        Vector9 Zx = stateToMesSpace(_X);
         Vector9 dz = Z - Zx;
 
         // H
+        Vector3f eX = _X.segment(6, 3);
         Matrix<float, 3, 3> Mre = eulRotLinearization(eX, _drImuMaster);
         Matrix<float, 3, 3> Mve = eulRotLinearization(eX, _w.cross(_drImuMaster));
 
@@ -276,37 +313,31 @@ private:
         _P = _P - dP;
         EkfUnicornState dx = K * dz;
         _X = _X + dx;
+        
+        Vector9 Zx_updated =  stateToMesSpace(_X);
+        Vector9 discrepancy = Z - Zx_updated;
+        return discrepancy;
     };
     
-	void correctNoYaw(const Vector3f& rZ, const Vector3f& vZ, Vector3f eZ)
+	Vector9 correctNoYaw(const Vector3f& rZ, const Vector3f& vZ, Vector3f eZ)
     {
         /* 
         * Use correctNoYaw if yaw is not inited yet
         * to update pos vel with gnns 
         * and roll pitch with imu
         * 
-        * suppose eZ(2) = 0;
+        * suppose yaw = eZ(2) = 0;
         */
         
-        Vector3f rX = _X.segment(0, 3);
-        Vector3f vX = _X.segment(3, 3);
-        Vector3f eX = _X.segment(6, 3);
-        Vector4f qX = quatFromEul(eX);
-        Vector9 Z;
         eZ(2) = 0;
+        Vector9 Z;
         Z << rZ, vZ, eZ;
-
-        // mes model
-        // Z[rgnns vgnns e_mes]
-        Vector3f Zr = rX + quatRotate(qX, _drImuMaster);
-        Vector3f Zv = vX + quatRotate(qX, _w.cross(_drImuMaster));
-        Vector3f Ze = eX;
-        Vector9 Zx;
-        Zx << Zr, Zv, Ze;
+        Vector9 Zx = stateToMesSpace(_X);
         Vector9 dz = Z - Zx;
         Vector8 dz_no_yaw = dz.segment(0, 8);
 
         // H
+        Vector3f eX = _X.segment(6, 3);
         Matrix<float, 3, 3> Mre = eulRotLinearization(eX, _drImuMaster);
         Matrix<float, 3, 3> Mve = eulRotLinearization(eX, _w.cross(_drImuMaster));
 
@@ -332,6 +363,10 @@ private:
         dx << K_no_yaw * dz_no_yaw, 0;
         _X = _X + dx;
         _P.block<8, 8>(0,0) = P_no_yaw;
+        
+        Vector9 Zx_updated =  stateToMesSpace(_X);
+        Vector9 discrepancy = Z - Zx_updated;
+        return discrepancy;
     };
 
 private:
@@ -399,6 +434,5 @@ private:
 	float _K_a_smoothed;
 	Vector3f _w;
 
-EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
