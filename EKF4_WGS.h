@@ -20,6 +20,7 @@ public:
 	Eigen::Matrix<double, 10, 1> getEstTargetState();
     Eigen::Vector3d getDrSlave1();
     Eigen::Vector3d getDrSlave2();
+    void getImuCorrected(Eigen::Vector3d& a, Eigen::Vector3d& w);
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
 private:

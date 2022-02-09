@@ -284,4 +284,10 @@ Eigen::Vector3d EKF4_WGS::getDrSlave2()
     return _drSlave2;
 }
 
+void EKF4_WGS::getImuCorrected(Eigen::Vector3d& a, Eigen::Vector3d& w)
+{
+    a = _a_smoothed;
+    w = _w_smoothed;
+}
+
 /* GET <- */
